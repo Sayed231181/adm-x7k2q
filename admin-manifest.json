@@ -1,6 +1,6 @@
 {
- "name": "Bank Qurban Sunnah - Admin",
- "short_name": "Admin Qurban",
+ "name": "ADMIN BQS",
+ "short_name": "ADMIN BQS",
  "start_url": "./",
  "scope": "./",
  "display": "standalone",
