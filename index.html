@@ -97,7 +97,7 @@ function renderA(a){
   const opts=S.members.map(m=>`<option value="${m.id}" ${sel==m.id?'selected':''}>${esc(m.nama)}</option>`).join('');
   const sm=S.members.find(x=>x.id==sel);
   a.innerHTML=head('ADMIN',`<button class="s" onclick="out()">Keluar</button><div class="tot">Total Saldo<br><small>Rp</small><b>${Math.round(tot).toLocaleString('id-ID')}</b></div>`)+`<div class="card"><div class="mu">${S.members.length} peserta · 🕒 Terakhir diperbarui: ${S.updated?new Date(S.updated).toLocaleString('id-ID',{dateStyle:'long',timeStyle:'short'}):'-'}</div>
-  ${dirty()?'<div class="err" style="margin-top:8px">⚠ Data tersimpan di HP ini. Setelah selesai: Cadangkan, lalu Buat File Peserta.</div>':''}
+  
   <div class="row" style="margin-top:8px"><button onclick="$('#xf').click()">📥 Impor Excel</button><button class="s" onclick="pdfRekap()">📄 PDF Rekap</button></div><div class="row" style="margin-top:8px"><button onclick="pubOnline()">☁ Terbitkan ke Peserta</button><button class="s" onclick="bak()">💾 Cadangkan</button><button class="s" onclick="$('#rf').click()">♻ Pulihkan</button></div><input id="rf" type="file" hidden onchange="rest(this.files[0])"><div class="row" style="margin-top:8px"><button class="s" onclick="fromPeserta()">⬇ Ambil Data Online</button><button class="s" onclick="mkPeserta()">📤 File Peserta</button></div>
   <input id="xf" type="file" hidden onchange="imp(this.files[0])">
   <div class="mu" style="margin-top:6px">Excel: format tabungan (2 baris per peserta) atau kolom <b>Nama, HP, Target, Saldo</b>. ${esc(msg)}</div></div>
@@ -170,7 +170,7 @@ async function pubOnline(){
     else if(g.status!=404){msg='Gagal terhubung ke GitHub ('+g.status+').';return render()}
     if(remote&&remote.members&&remote.members.length&&(remote.updated||0)>(S.syncBase||0)){
       if(!confirm('Data online lebih baru dari yang terakhir Anda ambil. Timpa dengan data di HP ini?')){msg='Dibatalkan. Tekan Ambil Data Online dulu.';return render()}}
-    const body=JSON.stringify(pubData());
+    S.updated=Date.now();const body=JSON.stringify(pubData());
     const p=await fetch(api,{method:'PUT',headers:Object.assign({'Content-Type':'application/json'},H),body:JSON.stringify({message:'Update data qurban',content:btoa(unescape(encodeURIComponent(body))),sha})});
     if(!p.ok){msg='Gagal menerbitkan ('+p.status+').';return render()}
     S.syncBase=S.updated;persist();msg='Terbit ✔ Peserta akan melihat data baru dalam 1 sampai 3 menit.';render()
