@@ -91,7 +91,7 @@ function render(){const a=$('#app');sortM();
 function loginA(){const v=$('#pn').value;if(!S.pin){if(v.length<4){msg='Minimal 4 angka';return render()}S.pin=v;save();role='a';msg='';render();if(!S.members.length)fromPeserta();return}if(v==S.pin){role='a';msg='';render();if(!S.members.length)fromPeserta()}else{msg='PIN salah';render()}}
 function out(){role=null;sel=null;msg='';render()}
 function hist(m,adm){const L=trxY(m);if(!L.length)return '<div class="mu">Belum ada transaksi pada periode ini.</div>';
-  return [...L].sort((a,b)=>b.d.localeCompare(a.d)).map(t=>`<div class="it"><div><b style="color:${t.j<0?'var(--rd)':'var(--pr)'}">${t.j<0?'Debit − ':'Kredit + '}${rp(Math.abs(t.j))}</b><div class="mu">${fd(t.d)}${t.n?' · '+esc(t.n):''}</div></div>${adm?`<button class="d" onclick="delT('${m.id}','${t.id}')">Hapus</button>`:''}</div>`).join('')}
+  return [...L].sort((a,b)=>b.d.localeCompare(a.d)).map(t=>`<div class="it"><div><b style="color:${t.j<0?'var(--rd)':'var(--pr)'}">${t.j<0?'Debit − ':'Kredit + '}${rp(Math.abs(t.j))}</b><div class="mu">${fd(t.d)}${t.n?' · '+esc(t.n):''}</div></div>${adm?`<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${t.j<0?`<button class="s" onclick="slipP('${m.id}','${t.id}',false)">🧾 Slip</button><button class="s" onclick="slipP('${m.id}','${t.id}',true)">💬 WA</button>`:''}<button class="d" onclick="delT('${m.id}','${t.id}')">Hapus</button></div>`:''}</div>`).join('')}
 function listH(){const k=q.trim().toLowerCase();const L=S.members.filter(m=>!k||m.nama.toLowerCase().includes(k));
   return L.map(m=>`<div class="it" style="align-items:flex-start"><div style="flex:1"><b>${esc(m.nama)}</b><div class="mu">${rp(saldoY(m))}${m.target?' / '+rp(m.target):''}</div><div class="bar"><i style="width:${pctY(m)}%"></i></div></div><button class="s" onclick="sel='${m.id}';render();scrollTo(0,document.body.scrollHeight)">Detail</button></div>`).join('')||'<div class="mu">'+(k?'Nama tidak ditemukan.':'Belum ada peserta. Impor Excel atau tambah manual.')+'</div>'}
 
@@ -215,6 +215,33 @@ function pdfM(id,sh){const m=S.members.find(x=>x.id==id);const {jsPDF}=window.js
   const fn='Qurban-'+Y+'-'+m.nama.replace(/\W+/g,'_')+'.pdf';
   const txt=`Assalamualaikum ${m.nama}, saldo Bank Qurban Sunnah Anda s.d. ${cutLabel(Y)}: ${rp(saldoY(m))}`+(m.target?` (target ${rp(m.target)}, ${pctY(m).toFixed(0)}%)`:'')+'. Jazakumullah khairan.';
   sh?share(doc,fn,txt,m.hp):dl(doc,fn)}
+const SLIP={rek:'SAYED FAJRIADI',admin:'AGUSTIAR',kota:'BLANG NISAM'};
+function terbilang(n){n=Math.floor(Math.abs(n));const s=['','satu','dua','tiga','empat','lima','enam','tujuh','delapan','sembilan','sepuluh','sebelas'];
+  const f=x=>{x=Math.floor(x);if(x<12)return s[x];if(x<20)return f(x-10)+' belas';if(x<100)return f(x/10)+' puluh'+(x%10?' '+f(x%10):'');if(x<200)return 'seratus'+(x%100?' '+f(x%100):'');if(x<1e3)return f(x/100)+' ratus'+(x%100?' '+f(x%100):'');if(x<2e3)return 'seribu'+(x%1e3?' '+f(x%1e3):'');if(x<1e6)return f(x/1e3)+' ribu'+(x%1e3?' '+f(x%1e3):'');if(x<1e9)return f(x/1e6)+' juta'+(x%1e6?' '+f(x%1e6):'');if(x<1e12)return f(x/1e9)+' miliar'+(x%1e9?' '+f(x%1e9):'');return f(x/1e12)+' triliun'+(x%1e12?' '+f(x%1e12):'')};
+  return n?f(n).replace(/^./,c=>c.toUpperCase())+' rupiah':'Nol rupiah'}
+let _lg=null;
+async function logoData(){if(_lg!==null)return _lg;try{const b=await (await fetch('logo.png')).blob();_lg=await new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b)})}catch(e){_lg=''}return _lg}
+async function slipP(mid,tid,sh){const m=S.members.find(x=>x.id==mid),t=m&&m.trx.find(x=>x.id==tid);if(!t||t.j>=0)return;
+  const pen=-t.j,sisa=saldoY(m),sal=sisa+pen,lg=await logoData(),now=new Date();
+  const per=hparts(now).y+' H / '+now.getFullYear()+' M',tgl=now.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+  const {jsPDF}=window.jspdf;const d=new jsPDF({orientation:'landscape',unit:'mm',format:'a5'});
+  const B=(x,y,s,al)=>{d.setFont('helvetica','bold');d.setFontSize(10);d.text(s,x,y,al?{align:al}:undefined)},N=(x,y,s,al)=>{d.setFont('helvetica','normal');d.setFontSize(10);d.text(s,x,y,al?{align:al}:undefined)};
+  if(lg)d.addImage(lg,'PNG',10,8,28,26);
+  d.setFont('helvetica','bold');d.setFontSize(20);d.text('BANK QURBAN SUNNAH',105,24,{align:'center'});
+  d.setFontSize(9);d.setFont('helvetica','normal');d.text('SLIP PENARIKAN',105,31,{align:'center'});
+  d.setLineWidth(.6);d.line(10,38,200,38);
+  B(10,48,'NAMA NASABAH');B(52,48,':');N(56,48,m.nama);
+  B(130,48,'PERIODE');B(150,48,':');N(154,48,per);
+  const R=(y,l,v,bold)=>{B(10,y,l);B(52,y,':');(bold?B:N)(56,y,v)};
+  R(60,'JUMLAH SALDO',rp(sal));R(68,'JUMLAH PENARIKAN',rp(pen));d.setLineWidth(.3);d.line(10,72,120,72);R(78,'SISA SALDO',rp(sisa),true);
+  const tb=d.splitTextToSize('TERBILANG JUMLAH PENARIKAN = '+terbilang(pen).toUpperCase(),190);B(10,94,tb);
+  B(10,114,'TRANSFER DARI REKENING');B(10,132,'('+SLIP.rek+')');
+  N(155,106,SLIP.kota+', '+tgl,'center');B(155,112,'MENGETAHUI ADMIN','center');
+  if(lg)d.addImage(lg,'PNG',143,115,24,22);
+  B(155,142,'('+SLIP.admin+')','center');
+  const fn='Slip-Penarikan-'+m.nama.replace(/\W+/g,'_')+'-'+t.d+'.pdf';
+  const txt='Assalamualaikum '+m.nama+', berikut slip penarikan Bank Qurban Sunnah sebesar '+rp(pen)+' ('+terbilang(pen)+'). Sisa saldo Anda: '+rp(sisa)+'. Jazakumullah khairan.';
+  sh?share(d,fn,txt,m.hp):dl(d,fn)}
 function pdfRekap(){const {jsPDF}=window.jspdf;const doc=new jsPDF();
   doc.setFontSize(16);doc.text('Rekap Bank Qurban Sunnah - Periode '+Y,14,18);doc.setFontSize(10);doc.text('Saldo s.d. '+cutLabel(Y)+' | Dicetak: '+fd(today()),14,25);
   const rows=S.members.map((m,i)=>[i+1,m.nama,rp(m.target),rp(saldoY(m,Y-1)),rp(saldoY(m)-saldoY(m,Y-1)),rp(saldoY(m)),pctY(m).toFixed(0)+'%']);
