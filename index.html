@@ -41,6 +41,15 @@ button.s{background:var(--pr2);color:var(--pr)}button.d{background:transparent;c
 .it{text-align:left}
 .logo2{width:min(100%,170px);height:auto;display:block;margin:6px auto 0;border-radius:14px}
 .bqs{font-size:25px;font-weight:800;color:var(--pr);line-height:1.1;text-align:center;margin-top:6px}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:50;overflow:auto;padding:12px}
+.sp{background:#fff;color:#111;border-radius:10px;padding:14px;max-width:560px;margin:0 auto;text-align:left;font-size:13px;line-height:1.5}
+.sp hr{border:0;border-top:2px solid #111;margin:8px 0}.sp hr.sm{border-top-width:1px;width:70%;margin:2px 0}
+.sh{display:flex;align-items:center;gap:8px}.sh img{width:64px;height:auto}.st{flex:1;text-align:center;font-weight:800;font-size:17px}.st small{display:block;font-size:11px;font-weight:400}
+.sr{display:grid;grid-template-columns:135px 12px 1fr;gap:2px;padding:1px 0}.sr span:first-child{font-weight:700}
+.sr2{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:6px 0 8px}
+.tb{margin:16px 0 22px}
+.sf{display:flex;justify-content:space-between;gap:8px}.sg{text-align:center}.sg img{width:62px;display:block;margin:4px auto}
+.sb{display:flex;gap:8px;justify-content:center;max-width:560px;margin:10px auto}
 </style>
 </head>
 <body>
@@ -91,9 +100,9 @@ function render(){const a=$('#app');sortM();
 function loginA(){const v=$('#pn').value;if(!S.pin){if(v.length<4){msg='Minimal 4 angka';return render()}S.pin=v;save();role='a';msg='';render();if(!S.members.length)fromPeserta();return}if(v==S.pin){role='a';msg='';render();if(!S.members.length)fromPeserta()}else{msg='PIN salah';render()}}
 function out(){role=null;sel=null;msg='';render()}
 function hist(m,adm){const L=trxY(m);if(!L.length)return '<div class="mu">Belum ada transaksi pada periode ini.</div>';
-  return [...L].sort((a,b)=>b.d.localeCompare(a.d)).map(t=>`<div class="it"><div><b style="color:${t.j<0?'var(--rd)':'var(--pr)'}">${t.j<0?'Debit − ':'Kredit + '}${rp(Math.abs(t.j))}</b><div class="mu">${fd(t.d)}${t.n?' · '+esc(t.n):''}</div></div>${adm?`<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${t.j<0?`<button class="s" onclick="slipP('${m.id}','${t.id}',false)">🧾 Slip</button><button class="s" onclick="slipP('${m.id}','${t.id}',true)">💬 WA</button>`:''}<button class="d" onclick="delT('${m.id}','${t.id}')">Hapus</button></div>`:''}</div>`).join('')}
+  return [...L].sort((a,b)=>b.d.localeCompare(a.d)).map(t=>`<div class="it"><div><b style="color:${t.j<0?'var(--rd)':'var(--pr)'}">${t.j<0?'Debit − ':'Kredit + '}${rp(Math.abs(t.j))}</b><div class="mu">${fd(t.d)}${t.n?' · '+esc(t.n):''}</div></div>${adm?`<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${t.j<0?`<button class="s" onclick="slipView('${m.id}','${t.id}')">👁 Lihat</button><button class="s" onclick="slipP('${m.id}','${t.id}',true)">💬 WA</button>`:''}<button class="d" onclick="delT('${m.id}','${t.id}')">Hapus</button></div>`:''}</div>`).join('')}
 function listH(){const k=q.trim().toLowerCase();const L=S.members.filter(m=>!k||m.nama.toLowerCase().includes(k));
-  return L.map(m=>`<div class="it" style="align-items:flex-start"><div style="flex:1"><b>${esc(m.nama)}</b><div class="mu">${rp(saldoY(m))}${m.target?' / '+rp(m.target):''}</div><div class="bar"><i style="width:${pctY(m)}%"></i></div></div><button class="s" onclick="sel='${m.id}';render();scrollTo(0,document.body.scrollHeight)">Detail</button></div>`).join('')||'<div class="mu">'+(k?'Nama tidak ditemukan.':'Belum ada peserta. Impor Excel atau tambah manual.')+'</div>'}
+  return L.map(m=>`<div class="it" style="align-items:flex-start"><div style="flex:1"><b>${esc(m.nama)}</b><div class="mu">${rp(saldoY(m))}${m.target?' / '+rp(m.target):''}</div><div class="bar"><i style="width:${pctY(m)}%"></i></div></div><button class="s" onclick="sel='${m.id}';render();document.getElementById('det').scrollIntoView()">Detail</button></div>`).join('')||'<div class="mu">'+(k?'Nama tidak ditemukan.':'Belum ada peserta. Impor Excel atau tambah manual.')+'</div>'}
 
 function renderA(a){
   const tot=S.members.reduce((s,m)=>s+saldoY(m),0);
@@ -110,7 +119,7 @@ function renderA(a){
   <select id="jn"><option value="1">Kredit (uang masuk)</option><option value="-1">Debit (uang keluar/penarikan)</option></select><input id="ct" placeholder="Catatan (opsional)"><button onclick="addT()">Simpan Transaksi</button></div>
   <div class="card"><h2>Peserta</h2><input id="sq" placeholder="🔍 Cari nama..." value="${esc(q)}" oninput="q=this.value;$('#plist').innerHTML=listH()" style="text-align:center"><div id="plist">${listH()}</div>
   <div class="row" style="margin-top:8px"><input id="nn" placeholder="Nama peserta baru"><input id="nt" type="text" inputmode="numeric" placeholder="Target (Rp)" oninput="fmtJm(this)" autocomplete="off"></div><button class="s" onclick="addM()">+ Tambah Peserta</button></div>
-  ${sm?`<div class="card"><h2>${esc(sm.nama)} — ${rp(saldoY(sm))}</h2>${(saldoY(sm,Y-1)||Y>2026)?`<div class="mu">Saldo bawaan dari periode sebelumnya: ${rp(saldoY(sm,Y-1))}</div>`:''}${hist(sm,true)}
+  ${sm?`<div class="card" id="det"><h2>${esc(sm.nama)} — ${rp(saldoY(sm))}</h2>${(saldoY(sm,Y-1)||Y>2026)?`<div class="mu">Saldo bawaan dari periode sebelumnya: ${rp(saldoY(sm,Y-1))}</div>`:''}${hist(sm,true)}
   <div class="row" style="margin-top:8px"><button onclick="pdfM('${sm.id}',false)">📄 PDF</button><button onclick="pdfM('${sm.id}',true)">💬 Kirim WA</button><button class="s" onclick="sel=null;render()">Tutup</button></div>
   <input id="hp" value="${esc(sm.hp||'')}" placeholder="No. HP (08...)" onchange="setHp('${sm.id}',this.value)" style="margin-top:8px"></div>`:''}
   <div class="card"><h2>Pengaturan</h2><input id="np" placeholder="PIN baru"><button class="s" onclick="if($('#np').value){S.pin=$('#np').value;save();msg='PIN diganti';render()}">Ganti PIN</button><h2 style="margin-top:14px">Terbitkan Otomatis (GitHub)</h2><div class="mu">${ghTok()?'Token tersimpan di HP ini ✔':'Belum ada token.'}</div><input id="tk" type="password" placeholder="Tempel token GitHub"><div class="row"><button class="s" onclick="saveTok()">Simpan Token</button><button class="d" onclick="delTok()">Hapus Token</button></div></div>`;
@@ -221,6 +230,17 @@ function terbilang(n){n=Math.floor(Math.abs(n));const s=['','satu','dua','tiga',
   return n?f(n).replace(/^./,c=>c.toUpperCase())+' rupiah':'Nol rupiah'}
 let _lg=null;
 async function logoData(){if(_lg!==null)return _lg;try{const b=await (await fetch('logo.png')).blob();_lg=await new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b)})}catch(e){_lg=''}return _lg}
+function slipView(mid,tid){const m=S.members.find(x=>x.id==mid),t=m&&m.trx.find(x=>x.id==tid);if(!t||t.j>=0)return;
+  const pen=-t.j,sisa=saldoY(m),sal=sisa+pen,now=new Date(),per=hparts(now).y+' H / '+now.getFullYear()+' M',tgl=now.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+  const r=(l,v,b)=>`<div class="sr"><span>${l}</span><span>:</span><span${b?' style="font-weight:700"':''}>${v}</span></div>`;
+  const o=document.createElement('div');o.className='ov';o.id='ov';
+  o.innerHTML=`<div class="sp"><div class="sh"><img src="logo.png" alt=""><div class="st">BANK QURBAN SUNNAH<small>SLIP PENARIKAN</small></div></div><hr>
+  <div class="sr2"><div><b>NAMA NASABAH</b> : ${esc(m.nama)}</div><div><b>PERIODE</b> : ${per}</div></div>
+  ${r('JUMLAH SALDO',rp(sal))}${r('JUMLAH PENARIKAN',rp(pen))}<hr class="sm">${r('SISA SALDO',rp(sisa),1)}
+  <p class="tb"><b>TERBILANG JUMLAH PENARIKAN =</b> ${terbilang(pen).toUpperCase()}</p>
+  <div class="sf"><div><b>TRANSFER DARI REKENING</b><div style="margin-top:34px">(${SLIP.rek})</div></div><div class="sg"><div>${SLIP.kota}, ${tgl}</div><b>MENGETAHUI ADMIN</b><img src="logo.png" alt=""><div>(${SLIP.admin})</div></div></div></div>
+  <div class="sb"><button onclick="slipP('${mid}','${tid}',true)">💬 Kirim WA (PDF)</button><button class="s" onclick="document.getElementById('ov').remove()">Tutup</button></div>`;
+  document.body.appendChild(o)}
 async function slipP(mid,tid,sh){const m=S.members.find(x=>x.id==mid),t=m&&m.trx.find(x=>x.id==tid);if(!t||t.j>=0)return;
   const pen=-t.j,sisa=saldoY(m),sal=sisa+pen,lg=await logoData(),now=new Date();
   const per=hparts(now).y+' H / '+now.getFullYear()+' M',tgl=now.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
